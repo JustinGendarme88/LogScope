@@ -2,6 +2,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, UploadFile, status
 
+from app.services.log_analyzer import analyze_logs
 from app.services.log_parser import parse_log_content
 
 router = APIRouter(prefix="/logs", tags=["Logs"])
@@ -59,11 +60,14 @@ async def upload_log_file(file: UploadFile):
             detail="The file does not contain any valid log entries.",
         )
 
+    statistics = analyze_logs(parsed_entries)
+
     return {
-        "message": "Log file parsed successfully.",
+        "message": "Log file analyzed successfully.",
         "filename": filename,
         "size_bytes": file_size,
         "parsed_entries": len(parsed_entries),
         "invalid_lines": invalid_lines,
+        "statistics": statistics,
         "preview": parsed_entries[:5],
     }
