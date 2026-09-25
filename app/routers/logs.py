@@ -1,11 +1,12 @@
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
     Query,
+    Response,
     UploadFile,
     status,
 )
@@ -14,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Analysis
+from app.services.exporter import create_csv_export, create_json_export
 from app.services.log_analyzer import analyze_logs
 from app.services.log_parser import parse_log_content
 
@@ -166,3 +168,39 @@ def get_analysis(
         )
 
     return serialize_analysis(analysis)
+
+
+@router.get("/analyses/{analysis_id}/export/{export_format}")
+def export_analysis(
+    analysis_id: int,
+    export_format: Literal["json", "csv"],
+    database: Session = Depends(get_db),
+):
+    analysis = database.get(Analysis, analysis_id)
+
+    if analysis is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Analysis not found.",
+        )
+
+    export_data = serialize_analysis(analysis)
+
+    if export_format == "json":
+        content = create_json_export(export_data)
+        media_type = "application/json"
+        filename = f"analysis_{analysis_id}.json"
+    else:
+        content = create_csv_export(export_data)
+        media_type = "text/csv"
+        filename = f"analysis_{analysis_id}.csv"
+
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{filename}"'
+            )
+        },
+    )
