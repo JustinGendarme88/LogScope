@@ -49,7 +49,7 @@ IP - - [timestamp] "HTTP method endpoint protocol" status size response_time_ms
 Clone the repository and enter the project directory:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/JustinGendarme88/LogScope.git
 cd LogScope
 ```
 
